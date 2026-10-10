@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}FX Journal — نمای کلی{% endblock %}
+{% block content %}
+
+<section class="stats-grid">
+  <div class="stat-card"><span>تعداد معاملات</span><strong>{{ stats.total_trades }}</strong></div>
+  <div class="stat-card"><span>نرخ برد</span><strong>{{ "%.1f"|format(stats.win_rate) }}%</strong></div>
+  <div class="stat-card"><span>سود/زیان خالص</span>
+    <strong class="{{ 'pos' if stats.net_pnl >= 0 else 'neg' }}">{{ "%.2f"|format(stats.net_pnl) }}</strong>
+  </div>
+  <div class="stat-card"><span>Profit Factor</span>
+    <strong>{{ "%.2f"|format(stats.profit_factor) if stats.profit_factor is not none else '∞' }}</strong>
+  </div>
+  <div class="stat-card"><span>Expectancy / معامله</span><strong>{{ "%.2f"|format(stats.expectancy) }}</strong></div>
+  <div class="stat-card"><span>بیشینه افت (Max DD)</span><strong class="neg">{{ "%.2f"|format(stats.max_drawdown) }}</strong></div>
+</section>
+
+{% if svg_points %}
+<section class="equity-card">
+  <h3>منحنی equity</h3>
+  <svg viewBox="0 0 600 160" class="equity-svg">
+    <polyline points="{{ svg_points }}" fill="none" stroke="#f59e0b" stroke-width="2"/>
+  </svg>
+</section>
+{% endif %}
+
+<section>
+  <h3>معاملات اخیر</h3>
+  <table class="trades-table">
+    <thead>
+      <tr>
+        <th>نماد</th><th>جهت</th><th>ورود</th><th>خروج</th><th>حجم</th>
+        <th>سود/زیان</th><th>تاریخ باز شدن</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in trades %}
+      <tr>
+        <td>{{ t.symbol }}</td>
+        <td>{{ 'خرید' if t.direction == 'long' else 'فروش' }}</td>
+        <td>{{ t.entry_price }}</td>
+        <td>{{ t.exit_price or '—' }}</td>
+        <td>{{ t.lots }}</td>
+        <td class="{{ 'pos' if t.pnl and t.pnl >= 0 else 'neg' if t.pnl else '' }}">
+          {{ t.pnl if t.pnl is not none else '—' }}
+        </td>
+        <td>{{ t.opened_at }}</td>
+        <td>
+          <form method="post" action="{{ url_for('journal.delete_trade', trade_id=t.id) }}"
+                onsubmit="return confirm('حذف این معامله؟');">
+            <button type="submit" class="btn-danger">حذف</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="empty">هنوز معامله‌ای ثبت نشده.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% endblock %}
